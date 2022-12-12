@@ -70,7 +70,11 @@ func (al Alog) formatMessage(msg string) string {
 func (al Alog) write(msg string, wg *sync.WaitGroup) {
 	al.m.Lock()
 	defer func() {
-		recover()
+		if msg := recover(); msg != nil {
+			go func() {
+				al.errorCh <- fmt.Errorf("%v", msg)
+			}()
+		}
 		al.m.Unlock()
 		wg.Done()
 	}()

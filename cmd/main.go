@@ -3,6 +3,7 @@ package main
 import (
 	"alog"
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -11,6 +12,15 @@ import (
 	"strings"
 )
 
+type panickingWriter struct {
+	b *bytes.Buffer
+}
+
+func (pw panickingWriter) Write(data []byte) (int, error) {
+	pw.b.Write(data)
+	panic("panicking!")
+}
+
 func main() {
 	out := flag.String("out", "stdout", "File name to use for log output. If stdout is provided, then output is written directly to the console.")
 	async := flag.Bool("async", false, "This flag determines if the logger should write asynchronously.")
@@ -18,8 +28,12 @@ func main() {
 
 	var w io.Writer
 	var err error
+	b := bytes.NewBuffer([]byte{})
 	if strings.ToLower(*out) == "stdout" {
 		w = os.Stdout
+	} else if strings.ToLower(*out) == "panic" {
+		b = bytes.NewBuffer([]byte{})
+		w = panickingWriter{b}
 	} else {
 		w, err = os.Create(*out)
 		if err != nil {
